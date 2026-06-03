@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chrono VTT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f0e; --surface: #161918; --surface2: #1e2220;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+    --green: #2ecc8a; --green-dim: rgba(46,204,138,0.12);
+    --blue: #3b9eff; --blue-dim: rgba(59,158,255,0.12);
+    --red: #ff4d4d; --red-dim: rgba(255,77,77,0.1);
+    --amber: #ffb830; --text: #f0f2f0; --text2: #8a9490; --text3: #5a6460;
+    --font-display: 'Barlow Condensed', sans-serif;
+    --font-body: 'Barlow', sans-serif; --r: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-body); }
+  body { display: flex; flex-direction: column; min-height: 100vh; }
+  header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface); position: sticky; top: 0; z-index: 10; }
+  .logo { font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+  .logo span { color: var(--green); }
+  .status-pill { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text2); background: var(--surface2); border: 1px solid var(--border); padding: 5px 12px; border-radius: 99px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); transition: background 0.4s; }
+  .dot.on { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot.off { background: var(--red); }
+  .tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; }
+  .tab { flex: 1; padding: 14px 8px; text-align: center; font-family: var(--font-display); font-size: 15px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text3); cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.2s, border-color 0.2s; }
+  .tab.active { color: var(--green); border-color: var(--green); }
+  main { flex: 1; padding: 20px; max-width: 480px; margin: 0 auto; width: 100%; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 18px; margin-bottom: 14px; }
+  .card-title { font-family: var(--font-display); font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); margin-bottom: 14px; }
+  .depart-input-row { display: flex; gap: 10px; align-items: stretch; }
+  .depart-input-row input { flex: 1; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r); color: var(--text); font-family: var(--font-display); font-size: 32px; font-weight: 700; text-align: center; padding: 12px 10px; outline: none; transition: border-color 0.2s; -moz-appearance: textfield; }
+  .depart-input-row input::-webkit-outer-spin-button, .depart-input-row input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .depart-input-row input:focus { border-color: var(--green); }
+  .btn-go { background: var(--green); color: #0d1a14; border: none; border-radius: var(--r); padding: 0 22px; font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: opacity 0.15s, transform 0.1s; white-space: nowrap; }
+  .btn-go:hover { opacity: 0.88; }
+  .btn-go:active { transform: scale(0.96); }
+  .rider-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .rider-row:last-child { border-bottom: none; }
+  .rider-bib { font-family: var(--font-display); font-size: 26px; font-weight: 700; min-width: 52px; }
+  .rider-bib span { font-size: 14px; font-weight: 400; color: var(--text3); }
+  .rider-chrono { flex: 1; font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--amber); letter-spacing: 0.05em; }
+  .btn-finish { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(59,158,255,0.25); border-radius: 8px; padding: 9px 16px; font-family: var(--font-display); font-size: 14px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+  .btn-finish:active { transform: scale(0.96); }
+  .empty { text-align: center; padding: 32px 0; color: var(--text3); font-size: 14px; }
+  .result-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .result-row:last-child { border-bottom: none; }
+  .result-rank { font-family: var(--font-display); font-size: 18px; font-weight: 700; min-width: 32px; color: var(--text3); }
+  .result-rank.gold { color: #ffd700; }
+  .result-rank.silver { color: #c0c0c0; }
+  .result-rank.bronze { color: #cd7f32; }
+  .result-bib { font-family: var(--font-display); font-size: 22px; font-weight: 700; flex: 1; }
+  .result-bib span { font-size: 12px; color: var(--text3); font-weight: 400; }
+  .result-time { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--green); }
+  .export-row { display: flex; gap: 10px; margin-top: 14px; }
+  .btn-export { flex: 1; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r); padding: 11px 10px; color: var(--text2); font-family: var(--font-display); font-size: 14px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px; }
+  .btn-export:hover { background: var(--border); }
+  .btn-reset { background: transparent; border: 1px solid rgba(255,77,77,0.25); border-radius: var(--r); padding: 11px 14px; color: var(--red); font-family: var(--font-display); font-size: 14px; font-weight: 600; cursor: pointer; }
+  .btn-reset:hover { background: var(--red-dim); }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--surface); border: 1px solid var(--border2); padding: 11px 22px; border-radius: 99px; font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--text); opacity: 0; transition: opacity 0.25s, transform 0.25s; pointer-events: none; z-index: 100; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .stat-row { display: flex; gap: 10px; margin-bottom: 14px; }
+  .stat { flex: 1; background: var(--surface2); border-radius: 8px; padding: 12px 14px; }
+  .stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .stat-val { font-family: var(--font-display); font-size: 24px; font-weight: 700; }
+  .stat-val.green { color: var(--green); }
+  .stat-val.amber { color: var(--amber); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Chrono <span>VTT</span></div>
+  <div class="status-pill">
+    <div class="dot" id="conn-dot"></div>
+    <span id="conn-label">Connexion...</span>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="setTab('depart')">⛳ Départ</div>
+  <div class="tab" onclick="setTab('arrivee')">🏁 Arrivée</div>
+  <div class="tab" onclick="setTab('resultats')">🏆 Résultats</div>
+</div>
+
+<main>
+  <div id="tab-depart" class="section active">
+    <div class="card">
+      <div class="card-title">Numéro de dossard</div>
+      <div class="depart-input-row">
+        <input type="number" id="input-dossard" placeholder="42" min="1" max="999" />
+        <button class="btn-go" onclick="lancerRider()">GO</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Sur la piste</div>
+      <div id="piste-list"><div class="empty">Aucun rider en piste</div></div>
+    </div>
+  </div>
+
+  <div id="tab-arrivee" class="section">
+    <div class="card">
+      <div class="card-title">En attente d'arrivée</div>
+      <div id="arrivee-list"><div class="empty">Aucun rider en piste</div></div>
+    </div>
+  </div>
+
+  <div id="tab-resultats" class="section">
+    <div class="stat-row">
+      <div class="stat"><div class="stat-label">Riders classés</div><div class="stat-val green" id="stat-count">0</div></div>
+      <div class="stat"><div class="stat-label">Meilleur temps</div><div class="stat-val amber" id="stat-best">—</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Classement</div>
+      <div id="results-list"><div class="empty">Pas encore de résultats</div></div>
+    </div>
+    <div class="export-row">
+      <button class="btn-export" onclick="exportCSV()">📊 CSV / Excel</button>
+      <button class="btn-export" onclick="exportPDF()">📄 PDF</button>
+      <button class="btn-reset" onclick="resetSession()">🗑</button>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDBR96YC8rCR0qza0cTS3xU7iRjKajG0Hc",
+    authDomain: "chrono-vtt.firebaseapp.com",
+    databaseURL: "https://chrono-vtt-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "chrono-vtt",
+    storageBucket: "chrono-vtt.firebasestorage.app",
+    messagingSenderId: "150621632915",
+    appId: "1:150621632915:web:825c64a47136b3133ed066"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  let ridersOnTrack = {};
+  let resultsData = {};
+
+  function setConnected(ok) {
+    document.getElementById('conn-dot').className = 'dot ' + (ok ? 'on' : 'off');
+    document.getElementById('conn-label').textContent = ok ? 'Synchronisé' : 'Hors connexion';
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2400);
+  }
+
+  function fmt(ms) {
+    if (!ms || ms < 0) return '00.00';
+    const total = Math.floor(ms / 1000);
+    const min = Math.floor(total / 60);
+    const sec = total % 60;
+    const cents = Math.floor((ms % 1000) / 10);
+    return (min > 0 ? min + ':' : '') + String(sec).padStart(2,'0') + '.' + String(cents).padStart(2,'0');
+  }
+
+  function setTab(name) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      t.classList.toggle('active', ['depart','arrivee','resultats'][i] === name);
+    });
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+  }
+
+  function lancerRider() {
+    const input = document.getElementById('input-dossard');
+    const num = parseInt(input.value);
+    if (!num || num < 1) { showToast('⚠ Saisis un numéro valide'); return; }
+    if (Object.values(ridersOnTrack).find(r => r.num === num)) {
+      showToast('⚠ Dossard ' + num + ' déjà en piste'); return;
+    }
+    db.ref('session/riders').push({ num: num, start: Date.now() });
+    input.value = '';
+    input.focus();
+    showToast('🚴 Dossard ' + num + ' — partiii !');
+  }
+
+  function enregistrerArrivee(key, num, start) {
+    const elapsed = Date.now() - start;
+    db.ref('session/results').push({ num: num, elapsed: elapsed, at: new Date().toLocaleTimeString('fr-FR') });
+    db.ref('session/riders/' + key).remove();
+    showToast('🏁 #' + num + '  —  ' + fmt(elapsed));
+  }
+
+  function renderPiste() {
+    const el = document.getElementById('piste-list');
+    const entries = Object.entries(ridersOnTrack);
+    if (!entries.length) { el.innerHTML = '<div class="empty">Aucun rider en piste</div>'; return; }
+    el.innerHTML = entries.map(([k, r]) =>
+      '<div class="rider-row">' +
+        '<div class="rider-bib"><span>#</span>' + r.num + '</div>' +
+        '<div class="rider-chrono" id="el-' + k + '">' + fmt(Date.now() - r.start) + '</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  function renderArrivee() {
+    const el = document.getElementById('arrivee-list');
+    const entries = Object.entries(ridersOnTrack);
+    if (!entries.length) { el.innerHTML = '<div class="empty">Aucun rider en piste</div>'; return; }
+    el.innerHTML = entries.map(([k, r]) =>
+      '<div class="rider-row">' +
+        '<div class="rider-bib"><span>#</span>' + r.num + '</div>' +
+        '<div class="rider-chrono" id="el2-' + k + '">' + fmt(Date.now() - r.start) + '</div>' +
+        '<button class="btn-finish" onclick="enregistrerArrivee(\'' + k + '\',' + r.num + ',' + r.start + ')">Arrivée</button>' +
+      '</div>'
+    ).join('');
+  }
+
+  function renderResults() {
+    const entries = Object.values(resultsData);
+    document.getElementById('stat-count').textContent = entries.length || '0';
+    document.getElementById('stat-best').textContent = entries.length ? fmt(Math.min(...entries.map(r => r.elapsed))) : '—';
+    const el = document.getElementById('results-list');
+    if (!entries.length) { el.innerHTML = '<div class="empty">Pas encore de résultats</div>'; return; }
+    const sorted = [...entries].sort((a,b) => a.elapsed - b.elapsed);
+    const rankClass = ['gold','silver','bronze'];
+    const rankLabel = ['1er','2e','3e'];
+    el.innerHTML = sorted.map((r,i) =>
+      '<div class="result-row">' +
+        '<div class="result-rank ' + (rankClass[i]||'') + '">' + (rankLabel[i]||(i+1)) + '</div>' +
+        '<div class="result-bib"><span>#</span>' + r.num + '</div>' +
+        '<div class="result-time">' + fmt(r.elapsed) + '</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  db.ref('session/riders').on('value', snap => {
+    ridersOnTrack = snap.val() || {};
+    setConnected(true);
+    renderPiste();
+    renderArrivee();
+  }, () => setConnected(false));
+
+  db.ref('session/results').on('value', snap => {
+    resultsData = snap.val() || {};
+    renderResults();
+  });
+
+  setInterval(() => {
+    Object.entries(ridersOnTrack).forEach(([k, r]) => {
+      const t = fmt(Date.now() - r.start);
+      const e1 = document.getElementById('el-' + k);
+      const e2 = document.getElementById('el2-' + k);
+      if (e1) e1.textContent = t;
+      if (e2) e2.textContent = t;
+    });
+  }, 100);
+
+  function exportCSV() {
+    const entries = Object.values(resultsData);
+    if (!entries.length) { showToast('⚠ Pas de résultats à exporter'); return; }
+    const sorted = [...entries].sort((a,b) => a.elapsed - b.elapsed);
+    const rows = [['Rang','Dossard','Temps','Heure arrivée']];
+    sorted.forEach((r,i) => rows.push([i+1, r.num, fmt(r.elapsed), r.at]));
+    const csv = '\uFEFF' + rows.map(r => r.join(';')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'chronos_vtt_' + new Date().toLocaleDateString('fr-FR').replace(/\//g,'-') + '.csv';
+    a.click();
+    showToast('📊 Export CSV téléchargé');
+  }
+
+  function exportPDF() {
+    const entries = Object.values(resultsData);
+    if (!entries.length) { showToast('⚠ Pas de résultats à exporter'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const sorted = [...entries].sort((a,b) => a.elapsed - b.elapsed);
+    const date = new Date().toLocaleDateString('fr-FR');
+    doc.setFillColor(13,15,14); doc.rect(0,0,210,297,'F');
+    doc.setTextColor(240,242,240);
+    doc.setFontSize(26); doc.setFont('helvetica','bold');
+    doc.text('CHRONO VTT', 20, 24);
+    doc.setFontSize(11); doc.setFont('helvetica','normal');
+    doc.setTextColor(138,148,144);
+    doc.text('Session du ' + date, 20, 33);
+    doc.setDrawColor(46,204,138); doc.setLineWidth(0.5);
+    doc.line(20, 38, 190, 38);
+    doc.setFontSize(10); doc.setTextColor(90,100,96);
+    doc.text('RANG', 20, 48); doc.text('DOSSARD', 55, 48);
+    doc.text('TEMPS', 105, 48); doc.text('ARRIVÉE', 150, 48);
+    doc.line(20, 51, 190, 51);
+    doc.setFontSize(12); doc.setFont('helvetica','bold');
+    sorted.forEach((r,i) => {
+      const y = 62 + i * 12;
+      if (i===0) doc.setTextColor(255,215,0);
+      else if (i===1) doc.setTextColor(192,192,192);
+      else if (i===2) doc.setTextColor(205,127,50);
+      else doc.setTextColor(240,242,240);
+      doc.text(String(i+1), 20, y);
+      doc.setTextColor(240,242,240);
+      doc.text('#' + String(r.num), 55, y);
+      doc.setTextColor(46,204,138);
+      doc.text(fmt(r.elapsed), 105, y);
+      doc.setTextColor(138,148,144);
+      doc.setFont('helvetica','normal');
+      doc.text(r.at, 150, y);
+      doc.setFont('helvetica','bold');
+    });
+    doc.save('chronos_vtt_' + date.replace(/\//g,'-') + '.pdf');
+    showToast('📄 Export PDF téléchargé');
+  }
+
+  function resetSession() {
+    if (!confirm('Effacer tous les chronos de cette session ?')) return;
+    db.ref('session').remove();
+    showToast('🗑 Session effacée');
+  }
+</script>
+</body>
+</html>
